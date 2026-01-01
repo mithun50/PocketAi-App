@@ -168,10 +168,16 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
   },
   secondaryButtonText: {
-    color: colors.secondary,
+    color: colors.textSecondary,
     fontSize: fontSize.md,
+    fontWeight: '500',
   },
 });
