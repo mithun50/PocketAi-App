@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as api from '../services/api';
+import { connectionManager } from '../services/connection';
 import { Model, InstalledModel, DownloadState } from '../types';
 
 export function useModels() {
@@ -50,6 +51,9 @@ export function useModels() {
       progress: 0,
     });
 
+    // Pause health check polling during model installation (server is busy)
+    connectionManager.pause();
+
     // Simulate progress since API doesn't stream it
     const progressInterval = setInterval(() => {
       setDownloadState((prev) => ({
@@ -58,53 +62,68 @@ export function useModels() {
       }));
     }, 500);
 
-    const result = await api.installModel(modelName);
+    try {
+      const result = await api.installModel(modelName);
 
-    clearInterval(progressInterval);
+      clearInterval(progressInterval);
 
-    if (result.success) {
-      setDownloadState({
-        modelName,
-        status: 'complete',
-        progress: 100,
-      });
-      // Refresh models list
-      await fetchModels();
-    } else {
-      setDownloadState({
-        modelName,
-        status: 'error',
-        progress: 0,
-        error: result.error,
-      });
+      if (result.success) {
+        setDownloadState({
+          modelName,
+          status: 'complete',
+          progress: 100,
+        });
+        // Refresh models list
+        await fetchModels();
+      } else {
+        setDownloadState({
+          modelName,
+          status: 'error',
+          progress: 0,
+          error: result.error,
+        });
+      }
+
+      // Reset after delay
+      setTimeout(() => {
+        setDownloadState({
+          modelName: null,
+          status: 'idle',
+          progress: 0,
+        });
+      }, 2000);
+
+      return result;
+    } finally {
+      // Resume health check polling
+      connectionManager.resume();
     }
-
-    // Reset after delay
-    setTimeout(() => {
-      setDownloadState({
-        modelName: null,
-        status: 'idle',
-        progress: 0,
-      });
-    }, 2000);
-
-    return result;
   }, [fetchModels]);
 
   const removeModel = useCallback(async (modelName: string) => {
-    const result = await api.removeModel(modelName);
-    if (result.success) {
-      await fetchModels();
+    connectionManager.pause();
+    try {
+      const result = await api.removeModel(modelName);
+      if (result.success) {
+        await fetchModels();
+      }
+      return result;
+    } finally {
+      connectionManager.resume();
     }
-    return result;
   }, [fetchModels]);
 
   const activateModel = useCallback(async (modelName: string) => {
-    const result = await api.activateModel(modelName);
-    if (result.success) {
-      await fetchModels();
+    connectionManager.pause();
+    try {
+      const result = await api.activateModel(modelName);
+      if (result.success) {
+        await fetchModels();
+      }
+      return result;
+    } finally {
+      connectionManager.resume();
     }
-    return result;
   }, [fetchModels]);
 
   return {
