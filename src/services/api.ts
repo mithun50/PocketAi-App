@@ -8,7 +8,7 @@ import {
   ApiResult,
 } from '../types';
 
-const API_BASE = 'http://127.0.0.1:8081';
+const API_BASE = 'http://localhost:8081';
 const TIMEOUT = 10000; // 10 seconds
 
 async function fetchWithTimeout<T>(

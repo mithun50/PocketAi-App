@@ -22,7 +22,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#22c55e"
       },
-      "package": "com.pocketai.app"
+      "package": "com.pocketai.app",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
