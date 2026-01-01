@@ -2,6 +2,8 @@
 
 A mobile UI for PocketAI - run AI models locally on your Android device.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mithun50/PocketAi-Expo/blob/main/build_apk.ipynb)
+
 ## Features
 
 - **Setup Wizard**: Guides you through installing Termux and PocketAI
