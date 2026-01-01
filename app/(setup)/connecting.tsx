@@ -43,7 +43,7 @@ export default function ConnectingScreen() {
             <Text style={styles.troubleshootTitle}>Troubleshooting</Text>
             <Text style={styles.troubleshootText}>
               - Make sure Termux is still running
-              {'\n'}- Check if "pai api start" completed successfully
+              {'\n'}- Check if "pai api web" completed successfully
               {'\n'}- Look for "Server running on port 8081" message
               {'\n'}- Try running the command again in Termux
             </Text>
@@ -58,7 +58,7 @@ export default function ConnectingScreen() {
               {'\n\n'}1. Stop any running server: Ctrl+C
               {'\n'}2. Navigate to folder: cd ~/PocketAi
               {'\n'}3. Activate environment: source ~/.pocketai_env
-              {'\n'}4. Start API: pai api start
+              {'\n'}4. Start API: pai api web
             </Text>
           </View>
         )}

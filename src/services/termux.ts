@@ -13,6 +13,7 @@ export interface TermuxResult {
 
 /**
  * Check if Termux is installed without opening it
+ * Uses multiple URL scheme checks - doesn't actually launch Termux
  */
 export async function isTermuxInstalled(): Promise<boolean> {
   if (Platform.OS !== 'android') {
@@ -20,20 +21,33 @@ export async function isTermuxInstalled(): Promise<boolean> {
   }
 
   try {
-    // Try to check if we can resolve the Termux package
-    const canOpen = await Linking.canOpenURL('content://com.termux.documents/');
-    if (canOpen) return true;
+    // Check various Termux URL schemes that indicate installation
+    // These are content providers that Termux registers
+    const urlsToCheck = [
+      'content://com.termux.documents/',
+      'content://com.termux.filepicker/',
+    ];
 
-    // Fallback: try to start activity and catch error
-    // This is a workaround since Expo doesn't have direct package check
-    await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
-      packageName: TERMUX_PACKAGE,
-      className: 'com.termux.app.TermuxActivity',
-      extra: { __check_only__: true },
-    });
-    return true;
+    for (const url of urlsToCheck) {
+      try {
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) return true;
+      } catch {
+        // Continue checking other URLs
+      }
+    }
+
+    // Alternative: Check if Termux RUN_COMMAND intent is available
+    // This uses VIEW action which won't launch the app
+    try {
+      const canOpenTermux = await Linking.canOpenURL('termux://');
+      if (canOpenTermux) return true;
+    } catch {
+      // termux:// scheme may not be registered
+    }
+
+    return false;
   } catch (error: any) {
-    // If we get "Activity not found" type error, Termux is not installed
     return false;
   }
 }
@@ -113,10 +127,10 @@ export async function runSetupInTermux(): Promise<TermuxResult> {
 }
 
 /**
- * Start PocketAI API server
+ * Start PocketAI API server with web dashboard
  */
 export async function startApiInTermux(): Promise<TermuxResult> {
-  const command = 'source ~/.pocketai_env 2>/dev/null; cd ~/PocketAi && pai api start';
+  const command = 'source ~/.pocketai_env 2>/dev/null; cd ~/PocketAi && pai api web';
   return runInTermux(command);
 }
 

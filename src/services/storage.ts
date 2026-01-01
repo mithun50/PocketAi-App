@@ -9,14 +9,23 @@ const KEYS = {
 
 const MAX_MESSAGES = 100;
 
+// Storage result type for error handling
+export interface StorageResult {
+  success: boolean;
+  error?: string;
+}
+
 // Chat History
-export async function saveChatHistory(messages: Message[]): Promise<void> {
+export async function saveChatHistory(messages: Message[]): Promise<StorageResult> {
   try {
     // Keep only last MAX_MESSAGES
     const trimmed = messages.slice(-MAX_MESSAGES);
     await AsyncStorage.setItem(KEYS.CHAT_HISTORY, JSON.stringify(trimmed));
+    return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown storage error';
     console.error('Failed to save chat history:', error);
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -32,11 +41,14 @@ export async function loadChatHistory(): Promise<Message[]> {
   return [];
 }
 
-export async function clearChatHistory(): Promise<void> {
+export async function clearChatHistory(): Promise<StorageResult> {
   try {
     await AsyncStorage.removeItem(KEYS.CHAT_HISTORY);
+    return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown storage error';
     console.error('Failed to clear chat history:', error);
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -51,19 +63,25 @@ export async function isSetupComplete(): Promise<boolean> {
   }
 }
 
-export async function markSetupComplete(): Promise<void> {
+export async function markSetupComplete(): Promise<StorageResult> {
   try {
     await AsyncStorage.setItem(KEYS.SETUP_COMPLETE, 'true');
+    return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown storage error';
     console.error('Failed to mark setup complete:', error);
+    return { success: false, error: errorMsg };
   }
 }
 
-export async function resetSetup(): Promise<void> {
+export async function resetSetup(): Promise<StorageResult> {
   try {
     await AsyncStorage.removeItem(KEYS.SETUP_COMPLETE);
+    return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown storage error';
     console.error('Failed to reset setup:', error);
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -72,11 +90,14 @@ export interface AppSettings {
   showWelcomeModel?: boolean;
 }
 
-export async function saveSettings(settings: AppSettings): Promise<void> {
+export async function saveSettings(settings: AppSettings): Promise<StorageResult> {
   try {
     await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+    return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown storage error';
     console.error('Failed to save settings:', error);
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -93,11 +114,14 @@ export async function loadSettings(): Promise<AppSettings> {
 }
 
 // Clear all data
-export async function clearAllData(): Promise<void> {
+export async function clearAllData(): Promise<StorageResult> {
   try {
     const keys = Object.values(KEYS);
     await AsyncStorage.multiRemove(keys);
+    return { success: true };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown storage error';
     console.error('Failed to clear all data:', error);
+    return { success: false, error: errorMsg };
   }
 }

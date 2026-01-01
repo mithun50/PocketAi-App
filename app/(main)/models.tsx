@@ -6,6 +6,7 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,8 +48,17 @@ export default function ModelsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Models</Text>
-          <Text style={styles.headerSubtitle}>Manage AI models</Text>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.headerTitle}>Models</Text>
+              <Text style={styles.headerSubtitle}>Manage AI models</Text>
+            </View>
+          </View>
         </View>
         <View style={styles.disconnectedContainer}>
           <View style={styles.disconnectedIcon}>
@@ -59,7 +69,7 @@ export default function ModelsScreen() {
             Start the PocketAI API in Termux to manage models.
           </Text>
           <View style={styles.commandBox}>
-            <Text style={styles.commandText}>pai api start</Text>
+            <Text style={styles.commandText}>pai api web</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -70,11 +80,18 @@ export default function ModelsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Models</Text>
-          <Text style={styles.headerSubtitle}>
-            {installedModels.length} installed
-          </Text>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.headerTitle}>Models</Text>
+            <Text style={styles.headerSubtitle}>
+              {installedModels.length} installed
+            </Text>
+          </View>
         </View>
         <View style={styles.statusBadge}>
           <View style={styles.statusDot} />
@@ -225,9 +242,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  headerLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
   },
   headerTitle: {
     color: colors.text,

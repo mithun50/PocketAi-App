@@ -18,16 +18,16 @@ export const SETUP_COMMANDS = {
   // Step 5: Install a model
   installModel: (model: string) => `pai install ${model}`,
 
-  // Step 6: Start API
-  startApi: 'pai api start',
+  // Step 6: Start API with web dashboard
+  startApi: 'pai api web',
 
   // Combined first-time setup
   fullSetup: `pkg update && pkg install -y git curl
 git clone https://github.com/mithun50/PocketAi.git
 cd PocketAi && ./setup.sh`,
 
-  // Daily startup
-  dailyStart: 'source ~/.pocketai_env && pai api start',
+  // Daily startup (with web dashboard)
+  dailyStart: 'source ~/.pocketai_env && pai api web',
 };
 
 export const RECOMMENDED_MODELS = [

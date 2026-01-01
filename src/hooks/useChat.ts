@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { sendMessage } from '../services/api';
 import { saveChatHistory, loadChatHistory, clearChatHistory } from '../services/storage';
 import { connectionManager } from '../services/connection';
 import { Message } from '../types';
+import { Alert } from 'react-native';
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -18,10 +19,22 @@ export function useChat() {
     loadChatHistory().then(setMessages);
   }, []);
 
+  // Track if we've shown storage error to avoid spamming
+  const storageErrorShown = useRef(false);
+
   // Save chat history when messages change
   useEffect(() => {
     if (messages.length > 0) {
-      saveChatHistory(messages);
+      saveChatHistory(messages).then((result) => {
+        if (!result.success && !storageErrorShown.current) {
+          storageErrorShown.current = true;
+          Alert.alert(
+            'Storage Warning',
+            'Unable to save chat history. Your messages may not persist after closing the app.',
+            [{ text: 'OK', onPress: () => { storageErrorShown.current = false; } }]
+          );
+        }
+      });
     }
   }, [messages]);
 
@@ -57,27 +70,13 @@ export function useChat() {
         };
         setMessages((prev) => [...prev, aiMessage]);
       } else {
-        // Show error as AI message
-        const errorText = result.error || 'Failed to get response';
-        setError(errorText);
-        const errorMessage: Message = {
-          id: generateId(),
-          role: 'assistant',
-          content: errorText,
-          timestamp: Date.now(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+        // Show error in error state only - don't duplicate as message
+        // This prevents error showing twice (in UI banner AND in message list)
+        setError(result.error || 'Failed to get response');
       }
     } catch (err: any) {
-      const errorText = err?.message || 'Unknown error occurred';
-      setError(errorText);
-      const errorMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: `Error: ${errorText}`,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      // Show error in error state only - don't duplicate as message
+      setError(err?.message || 'Unknown error occurred');
     } finally {
       // Resume health check polling
       connectionManager.resume();
@@ -89,7 +88,14 @@ export function useChat() {
   const clear = useCallback(async () => {
     setMessages([]);
     setError(undefined);
-    await clearChatHistory();
+    const result = await clearChatHistory();
+    if (!result.success) {
+      Alert.alert(
+        'Storage Error',
+        'Failed to clear chat history from storage. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   }, []);
 
   return {

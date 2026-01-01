@@ -38,7 +38,7 @@ export interface ChatResponse {
 export interface ConfigResponse {
   active_model?: string;
   threads?: string;
-  ctx_size?: string;
+  ctx_size?: string;  // Backend uses ctx_size, not context_size
   [key: string]: string | undefined;
 }
 

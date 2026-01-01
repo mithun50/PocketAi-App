@@ -54,13 +54,24 @@ export function useModels() {
     // Pause health check polling during model installation (server is busy)
     connectionManager.pause();
 
-    // Simulate progress since API doesn't stream it
+    // Simulate progress with exponential slowdown for more realistic UX
+    // Progress slows down as it approaches 90% to avoid jarring jump to 100%
+    const startTime = Date.now();
     const progressInterval = setInterval(() => {
-      setDownloadState((prev) => ({
-        ...prev,
-        progress: Math.min(prev.progress + Math.random() * 5, 95),
-      }));
-    }, 500);
+      setDownloadState((prev) => {
+        const elapsed = (Date.now() - startTime) / 1000; // seconds
+        // Use logarithmic curve: fast at start, slows down approaching 90%
+        // This creates more realistic download progress feel
+        const targetProgress = Math.min(90 * (1 - Math.exp(-elapsed / 30)), 90);
+        // Add small random variation for realism
+        const jitter = Math.random() * 2 - 1;
+        const newProgress = Math.min(Math.max(prev.progress, targetProgress + jitter), 90);
+        return {
+          ...prev,
+          progress: newProgress,
+        };
+      });
+    }, 800);
 
     try {
       const result = await api.installModel(modelName);

@@ -10,6 +10,7 @@ import {
   Platform,
   Animated,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -106,7 +107,7 @@ export default function ChatScreen() {
           <View style={styles.warningContent}>
             <Text style={styles.warningTitle}>Backend Offline</Text>
             <Text style={styles.warningText}>
-              Run "pai api start" in Termux to connect
+              Run "pai api web" in Termux to connect
             </Text>
           </View>
         </View>
@@ -124,9 +125,11 @@ export default function ChatScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="sparkles" size={20} color={colors.textInverse} />
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
             <View>
               <Text style={styles.headerTitle}>PocketAI</Text>
               <View style={styles.statusRow}>
@@ -254,14 +257,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  logoContainer: {
+  headerLogo: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.md,
   },
   headerTitle: {
     color: colors.text,

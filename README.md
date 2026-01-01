@@ -92,10 +92,12 @@ pocketai-expo/
 After phone restart, start PocketAI in Termux:
 
 ```bash
-source ~/.pocketai_env && pai api start
+source ~/.pocketai_env && pai api web
 ```
 
 Then open this app - it will connect automatically.
+
+The `pai api web` command starts both the API and a web dashboard at http://localhost:8081
 
 ## License
 

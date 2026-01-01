@@ -118,6 +118,15 @@ export async function activateModel(
 export async function sendMessage(
   message: string
 ): Promise<ApiResult<ChatResponse>> {
+  // First check if there's an active model
+  const statusResult = await fetchWithTimeout<any>(`${API_BASE}/api/status`, {}, 3000);
+  if (statusResult.success && !statusResult.data?.model) {
+    return {
+      success: false,
+      error: 'No model active. Go to Models tab and tap a model to activate it.',
+    };
+  }
+
   const result = await fetchWithTimeout<any>(
     `${API_BASE}/api/chat`,
     {
@@ -131,17 +140,26 @@ export async function sendMessage(
     return { success: false, error: result.error };
   }
 
-  // Check if we got a valid response
+  // Check if we got a response
   const responseText = result.data?.response;
 
-  if (responseText && typeof responseText === 'string' && responseText.trim() !== '') {
-    return { success: true, data: { response: responseText.trim() } };
+  // Accept any string response, including empty (model might be processing)
+  if (typeof responseText === 'string') {
+    const trimmed = responseText.trim();
+    if (trimmed) {
+      return { success: true, data: { response: trimmed } };
+    }
+    // Empty response - could be model issue or processing
+    return {
+      success: false,
+      error: 'Model returned empty response. Try asking again or check if the model is working properly.',
+    };
   }
 
-  // Empty response - likely no model loaded
+  // No response field at all - API issue
   return {
     success: false,
-    error: 'No response from model. Please go to Models tab and make sure a model is installed and active (tap a model to activate it).',
+    error: 'Invalid response from API. Make sure PocketAI backend is running correctly.',
   };
 }
 

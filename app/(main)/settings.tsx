@@ -9,6 +9,7 @@ import {
   Linking,
   Switch,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -99,7 +100,7 @@ export default function SettingsScreen() {
     const result = await getConfig();
     if (result.success && result.data) {
       if (result.data.threads) setThreads(result.data.threads);
-      if (result.data.context_size) setContextSize(result.data.context_size);
+      if (result.data.ctx_size) setContextSize(result.data.ctx_size);
     }
   };
 
@@ -120,8 +121,12 @@ export default function SettingsScreen() {
           text: 'Clear All',
           style: 'destructive',
           onPress: async () => {
-            await clearChatHistory();
-            Alert.alert('Done', 'Chat history cleared successfully.');
+            const result = await clearChatHistory();
+            if (result.success) {
+              Alert.alert('Done', 'Chat history cleared successfully.');
+            } else {
+              Alert.alert('Error', 'Failed to clear chat history. Please try again.');
+            }
           },
         },
       ]
@@ -151,9 +156,9 @@ export default function SettingsScreen() {
       'Context Size',
       'Larger context allows longer conversations but uses more memory.',
       [
-        { text: '1024', onPress: () => updateSetting('context_size', '1024') },
-        { text: '2048', onPress: () => updateSetting('context_size', '2048') },
-        { text: '4096', onPress: () => updateSetting('context_size', '4096') },
+        { text: '1024', onPress: () => updateSetting('ctx_size', '1024') },
+        { text: '2048', onPress: () => updateSetting('ctx_size', '2048') },
+        { text: '4096', onPress: () => updateSetting('ctx_size', '4096') },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
@@ -163,7 +168,7 @@ export default function SettingsScreen() {
     const result = await setConfig(key, value);
     if (result.success) {
       if (key === 'threads') setThreads(value);
-      if (key === 'context_size') setContextSize(value);
+      if (key === 'ctx_size') setContextSize(value);
     }
   };
 
@@ -171,8 +176,17 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <Text style={styles.headerSubtitle}>Configure PocketAI</Text>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.headerTitle}>Settings</Text>
+            <Text style={styles.headerSubtitle}>Configure PocketAI</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView
@@ -288,10 +302,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  headerLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
   },
   headerTitle: {
     color: colors.text,

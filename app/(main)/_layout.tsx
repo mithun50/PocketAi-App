@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -11,21 +11,6 @@ import {
   shadows,
 } from '../../src/constants/theme';
 
-function LogoHeader({ title }: { title: string }) {
-  return (
-    <View style={styles.headerContent}>
-      <View style={styles.headerLeft}>
-        <Image
-          source={require('../../assets/icon.png')}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
-        <Text style={styles.headerTitle}>{title}</Text>
-      </View>
-    </View>
-  );
-}
-
 export default function MainLayout() {
   const insets = useSafeAreaInsets();
 
@@ -36,10 +21,7 @@ export default function MainLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerStyle: styles.header,
-        headerTitleStyle: styles.headerTitleStyle,
-        headerTintColor: colors.text,
+        headerShown: false,
         tabBarStyle: {
           ...styles.tabBar,
           height: tabBarHeight,
@@ -55,7 +37,6 @@ export default function MainLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          headerTitle: () => <LogoHeader title="Chat" />,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
@@ -69,7 +50,6 @@ export default function MainLayout() {
         name="models"
         options={{
           title: 'Models',
-          headerTitle: () => <LogoHeader title="Models" />,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name={focused ? 'cube' : 'cube-outline'}
@@ -83,7 +63,6 @@ export default function MainLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          headerTitle: () => <LogoHeader title="Settings" />,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name={focused ? 'settings' : 'settings-outline'}
@@ -114,37 +93,6 @@ function TabIcon({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitleStyle: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  headerLogo: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-  },
-  headerTitle: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-  },
   tabBar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
