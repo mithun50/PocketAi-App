@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import * as Clipboard from 'expo-clipboard';
 import * as IntentLauncher from 'expo-intent-launcher';
-import { Platform, Alert } from 'react-native';
+import { Platform, Alert, NativeModules } from 'react-native';
 
 const TERMUX_PACKAGE = 'com.termux';
 
@@ -9,6 +9,33 @@ export interface TermuxResult {
   success: boolean;
   error?: string;
   needsPermission?: boolean;
+}
+
+/**
+ * Check if Termux is installed without opening it
+ */
+export async function isTermuxInstalled(): Promise<boolean> {
+  if (Platform.OS !== 'android') {
+    return false;
+  }
+
+  try {
+    // Try to check if we can resolve the Termux package
+    const canOpen = await Linking.canOpenURL('content://com.termux.documents/');
+    if (canOpen) return true;
+
+    // Fallback: try to start activity and catch error
+    // This is a workaround since Expo doesn't have direct package check
+    await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
+      packageName: TERMUX_PACKAGE,
+      className: 'com.termux.app.TermuxActivity',
+      extra: { __check_only__: true },
+    });
+    return true;
+  } catch (error: any) {
+    // If we get "Activity not found" type error, Termux is not installed
+    return false;
+  }
 }
 
 /**

@@ -1,12 +1,32 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SetupStep } from '../../src/components/SetupStep';
-import { openFDroidForTermux } from '../../src/services/termux';
+import { openFDroidForTermux, isTermuxInstalled } from '../../src/services/termux';
 import { colors, spacing, fontSize, borderRadius } from '../../src/constants/theme';
 
 export default function TermuxScreen() {
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
+  const [termuxFound, setTermuxFound] = useState(false);
+
+  useEffect(() => {
+    checkTermux();
+  }, []);
+
+  const checkTermux = async () => {
+    setChecking(true);
+    const installed = await isTermuxInstalled();
+    setTermuxFound(installed);
+    setChecking(false);
+
+    // Auto-continue if Termux is found
+    if (installed) {
+      setTimeout(() => {
+        router.push('/(setup)/install');
+      }, 1500);
+    }
+  };
 
   const handleContinue = () => {
     router.push('/(setup)/install');
@@ -16,33 +36,77 @@ export default function TermuxScreen() {
     await openFDroidForTermux();
   };
 
+  // Show loading state
+  if (checking) {
+    return (
+      <SetupStep
+        title="Checking for Termux..."
+        subtitle="Please wait while we check if Termux is installed."
+        step={2}
+        totalSteps={5}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Detecting Termux...</Text>
+        </View>
+      </SetupStep>
+    );
+  }
+
+  // Termux is installed - show success and auto-continue
+  if (termuxFound) {
+    return (
+      <SetupStep
+        title="Termux Found!"
+        subtitle="Great! Termux is already installed on your device."
+        step={2}
+        totalSteps={5}
+        primaryAction={{
+          label: 'Continue',
+          onPress: handleContinue,
+        }}
+      >
+        <View style={styles.content}>
+          <View style={styles.successBox}>
+            <Text style={styles.successIcon}>✓</Text>
+            <Text style={styles.successTitle}>Termux Detected</Text>
+            <Text style={styles.successText}>
+              Continuing to the next step automatically...
+            </Text>
+          </View>
+        </View>
+      </SetupStep>
+    );
+  }
+
+  // Termux not installed - show installation guide
   return (
     <SetupStep
       title="Install Termux"
-      subtitle="Termux is a terminal app that runs a Linux environment on Android. It's where the AI will run."
+      subtitle="Termux is required to run AI models locally. Please install it from F-Droid."
       step={2}
       totalSteps={5}
       primaryAction={{
-        label: 'I Have Termux Installed',
-        onPress: handleContinue,
-      }}
-      secondaryAction={{
         label: 'Download from F-Droid',
         onPress: handleDownload,
+      }}
+      secondaryAction={{
+        label: 'I Have Installed It - Check Again',
+        onPress: checkTermux,
       }}
     >
       <View style={styles.content}>
         <View style={styles.warningBox}>
-          <Text style={styles.warningTitle}>Important</Text>
+          <Text style={styles.warningTitle}>Termux Not Found</Text>
           <Text style={styles.warningText}>
-            Download Termux from F-Droid, NOT the Play Store. The Play Store version is outdated and won't work properly.
+            Termux is not installed on your device. Please install it from F-Droid (NOT the Play Store).
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What is Termux?</Text>
+          <Text style={styles.sectionTitle}>Why F-Droid?</Text>
           <Text style={styles.sectionText}>
-            Termux is a free terminal emulator that provides a Linux command-line environment on Android. It allows running powerful applications like AI models directly on your phone.
+            The Play Store version of Termux is outdated and no longer maintained. The F-Droid version is actively updated and works correctly.
           </Text>
         </View>
 
@@ -50,17 +114,17 @@ export default function TermuxScreen() {
           <Text style={styles.sectionTitle}>Steps to install:</Text>
           <View style={styles.steps}>
             <Text style={styles.stepText}>1. Tap "Download from F-Droid" below</Text>
-            <Text style={styles.stepText}>2. Install F-Droid if you don't have it</Text>
-            <Text style={styles.stepText}>3. Search for "Termux" and install it</Text>
-            <Text style={styles.stepText}>4. Open Termux once to initialize it</Text>
-            <Text style={styles.stepText}>5. Come back here and tap "I Have Termux Installed"</Text>
+            <Text style={styles.stepText}>2. Install F-Droid app if prompted</Text>
+            <Text style={styles.stepText}>3. Search for "Termux" in F-Droid</Text>
+            <Text style={styles.stepText}>4. Install Termux and open it once</Text>
+            <Text style={styles.stepText}>5. Return here and tap "Check Again"</Text>
           </View>
         </View>
 
         <View style={styles.tipBox}>
-          <Text style={styles.tipTitle}>Already have Termux?</Text>
+          <Text style={styles.tipTitle}>What is Termux?</Text>
           <Text style={styles.tipText}>
-            If you already have Termux installed from F-Droid, just tap "I Have Termux Installed" to continue.
+            Termux is a terminal app that runs a Linux environment on Android. It allows running powerful applications like AI models directly on your phone - completely offline!
           </Text>
         </View>
       </View>
@@ -72,21 +136,54 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
   },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxxl,
+    gap: spacing.lg,
+  },
+  loadingText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+  },
+  successBox: {
+    backgroundColor: colors.primaryMuted,
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  successIcon: {
+    fontSize: 48,
+    color: colors.primary,
+  },
+  successTitle: {
+    color: colors.primary,
+    fontSize: fontSize.xl,
+    fontWeight: '600',
+  },
+  successText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    textAlign: 'center',
+  },
   warningBox: {
-    backgroundColor: '#3d2914',
+    backgroundColor: colors.errorMuted,
     padding: spacing.md,
     borderRadius: borderRadius.md,
     borderLeftWidth: 4,
-    borderLeftColor: colors.warning,
+    borderLeftColor: colors.error,
   },
   warningTitle: {
-    color: colors.warning,
+    color: colors.error,
     fontSize: fontSize.md,
     fontWeight: '600',
     marginBottom: spacing.xs,
   },
   warningText: {
-    color: '#f5d9b0',
+    color: '#f5b0b0',
     fontSize: fontSize.sm,
     lineHeight: 20,
   },
@@ -113,7 +210,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tipBox: {
-    backgroundColor: '#142d1a',
+    backgroundColor: colors.primaryMuted,
     padding: spacing.md,
     borderRadius: borderRadius.md,
     borderLeftWidth: 4,
