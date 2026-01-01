@@ -2,8 +2,17 @@ import * as Linking from 'expo-linking';
 import * as Clipboard from 'expo-clipboard';
 import * as IntentLauncher from 'expo-intent-launcher';
 import { Platform, Alert, NativeModules } from 'react-native';
+import Constants from 'expo-constants';
 
 const TERMUX_PACKAGE = 'com.termux';
+const TERMUX_BIN_PATH = '/data/data/com.termux/files/usr/bin';
+const TERMUX_HOME = '/data/data/com.termux/files/home';
+
+// Native module for Termux service intents (only available in built APK, not Expo Go)
+const TermuxIntent = NativeModules.TermuxIntent;
+
+// Check if running in Expo Go (native modules won't work there)
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export interface TermuxResult {
   success: boolean;
@@ -72,36 +81,51 @@ export async function openTermux(): Promise<TermuxResult> {
 }
 
 /**
- * Copy command to clipboard, then open Termux
- * Shows instruction to paste
+ * Execute command in Termux using RUN_COMMAND service intent
+ * Falls back to clipboard method if native module unavailable
  */
 export async function runInTermux(command: string): Promise<TermuxResult> {
   if (Platform.OS !== 'android') {
     return { success: false, error: 'Only available on Android' };
   }
 
-  try {
-    // Copy command to clipboard
-    await Clipboard.setStringAsync(command);
+  // Try native module first (only works in built APK, not Expo Go)
+  // Requires Termux "Allow External Apps" setting enabled
+  if (!isExpoGo && TermuxIntent) {
+    try {
+      await TermuxIntent.runCommand(
+        `${TERMUX_BIN_PATH}/bash`,
+        ['-c', command],
+        TERMUX_HOME,
+        false // not background - show in terminal
+      );
+      // Open Termux to see output
+      await openTermux();
+      return { success: true };
+    } catch (nativeError: any) {
+      console.log('Native Termux intent failed:', nativeError.message);
+      // Fall through to clipboard fallback
+    }
+  }
 
-    // Open Termux
+  // Fallback: Copy to clipboard and open Termux
+  try {
+    await Clipboard.setStringAsync(command);
     const openResult = await openTermux();
 
     if (openResult.success) {
-      // Show toast/alert after small delay
       setTimeout(() => {
         Alert.alert(
-          'Command Ready!',
-          'The command is copied to clipboard.\n\nIn Termux:\n1. Long-press the screen\n2. Tap "Paste"\n3. Press Enter to run',
-          [{ text: 'Got it' }]
+          'Paste Command in Termux',
+          'Command copied! Long-press → Paste → Enter\n\nFor auto-execute, run in Termux:\necho "allow-external-apps=true" >> ~/.termux/termux.properties\n\nThen restart Termux.',
+          [{ text: 'OK' }]
         );
       }, 300);
-      return { success: true };
-    } else {
-      return { success: false, error: 'Could not open Termux. Is it installed?' };
+      return { success: true, needsPermission: true };
     }
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed' };
+    return { success: false, error: 'Could not open Termux' };
+  } catch (fallbackError: any) {
+    return { success: false, error: fallbackError.message || 'Failed' };
   }
 }
 

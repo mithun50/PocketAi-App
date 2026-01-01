@@ -32,7 +32,8 @@
     },
     "plugins": [
       "expo-router",
-      "./plugins/withTermuxPermission"
+      "./plugins/withTermuxPermission",
+      "./plugins/withTermuxIntent"
     ],
     "experiments": {
       "typedRoutes": true
