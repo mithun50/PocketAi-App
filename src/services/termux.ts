@@ -62,7 +62,7 @@ export async function isTermuxInstalled(): Promise<boolean> {
 }
 
 /**
- * Open Termux app
+ * Open Termux app directly
  */
 export async function openTermux(): Promise<TermuxResult> {
   if (Platform.OS !== 'android') {
@@ -70,9 +70,12 @@ export async function openTermux(): Promise<TermuxResult> {
   }
 
   try {
+    // Launch Termux with proper flags for clean launch
     await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
       packageName: TERMUX_PACKAGE,
       className: 'com.termux.app.TermuxActivity',
+      category: 'android.intent.category.LAUNCHER',
+      flags: 0x10000000 | 0x20000000, // FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP
     });
     return { success: true };
   } catch (error) {
