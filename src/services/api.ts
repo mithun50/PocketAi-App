@@ -19,6 +19,8 @@ async function fetchWithTimeout<T>(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+  console.log(`[API] Fetching: ${url}`);
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -30,6 +32,7 @@ async function fetchWithTimeout<T>(
     });
 
     clearTimeout(timeoutId);
+    console.log(`[API] Response: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       return {
@@ -43,6 +46,7 @@ async function fetchWithTimeout<T>(
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error) {
+      console.log(`[API] Error: ${error.name} - ${error.message}`);
       if (error.name === 'AbortError') {
         return { success: false, error: 'Request timeout' };
       }
