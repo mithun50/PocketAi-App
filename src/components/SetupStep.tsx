@@ -2,6 +2,7 @@ import React from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -37,6 +38,16 @@ export function SetupStep({
 }: SetupStepProps) {
   return (
     <SafeAreaView style={styles.container}>
+      {/* Logo Header */}
+      <View style={styles.logoHeader}>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.logoText}>PocketAI</Text>
+      </View>
+
       {/* Progress indicator */}
       <View style={styles.progressContainer}>
         {Array.from({ length: totalSteps }).map((_, i) => (
@@ -100,6 +111,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  logoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  logo: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+  },
+  logoText: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '600',
   },
   progressContainer: {
     flexDirection: 'row',
