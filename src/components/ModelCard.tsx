@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -25,6 +26,7 @@ interface ModelCardProps {
   ram?: string;
   installed?: boolean;
   active?: boolean;
+  activating?: boolean;
   downloading?: boolean;
   progress?: number;
   onInstall?: () => void;
@@ -39,6 +41,7 @@ export function ModelCard({
   ram,
   installed = false,
   active = false,
+  activating = false,
   downloading = false,
   progress = 0,
   onInstall,
@@ -61,7 +64,7 @@ export function ModelCard({
   };
 
   const handlePress = () => {
-    if (installed && !active && onActivate) {
+    if (installed && !active && !activating && onActivate) {
       onActivate();
     }
   };
@@ -74,7 +77,7 @@ export function ModelCard({
         pressed && installed && !active && styles.pressed,
       ]}
       onPress={handlePress}
-      disabled={!installed || active}
+      disabled={!installed || active || activating}
     >
       {/* Active indicator bar */}
       {active && <View style={styles.activeBar} />}
@@ -140,7 +143,13 @@ export function ModelCard({
         <View style={styles.actions}>
           {installed ? (
             <>
-              {!active && onActivate && (
+              {activating && (
+                <View style={styles.activatingButton}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.activatingButtonText}>Activating...</Text>
+                </View>
+              )}
+              {!active && !activating && onActivate && (
                 <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={onActivate}
@@ -149,12 +158,12 @@ export function ModelCard({
                   <Text style={styles.primaryButtonText}>Activate</Text>
                 </TouchableOpacity>
               )}
-              {active && (
+              {active && !activating && (
                 <View style={styles.activeButton}>
                   <Text style={styles.activeButtonText}>Currently Active</Text>
                 </View>
               )}
-              {onDelete && (
+              {onDelete && !activating && (
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={handleDelete}
@@ -332,6 +341,23 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   activeButtonText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  activatingButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.primaryMuted,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    gap: spacing.sm,
+  },
+  activatingButtonText: {
     color: colors.primary,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,

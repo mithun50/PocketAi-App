@@ -29,7 +29,7 @@ import {
 import { Message } from '../../src/types';
 
 export default function ChatScreen() {
-  const { messages, isLoading, error, send, clear } = useChat();
+  const { messages, isLoading, error, send, clear, abort, streamingInfo } = useChat();
   const { connected, activeModel, refresh } = useBackendStatus();
   const flatListRef = useRef<FlatList>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -86,7 +86,11 @@ export default function ChatScreen() {
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <ChatBubble message={item} />
+    <ChatBubble
+      message={item}
+      isStreaming={streamingInfo.isStreaming && streamingInfo.streamingMessageId === item.id}
+      usedFallback={!streamingInfo.isStreaming && streamingInfo.usedFallback && streamingInfo.streamingMessageId === item.id}
+    />
   );
 
   const renderEmpty = () => (
@@ -209,16 +213,40 @@ export default function ChatScreen() {
           }
         />
 
-        {/* Typing indicator */}
+        {/* Typing/Streaming indicator */}
         {isLoading && (
           <View style={styles.typingContainer}>
             <View style={styles.typingBubble}>
-              <Animated.View style={[styles.typingDots, { opacity: pulseAnim }]}>
-                <View style={styles.typingDot} />
-                <View style={[styles.typingDot, styles.typingDotMiddle]} />
-                <View style={styles.typingDot} />
-              </Animated.View>
-              <Text style={styles.typingText}>AI is thinking...</Text>
+              {streamingInfo.isStreaming && streamingInfo.tokenCount > 0 ? (
+                <>
+                  <View style={styles.streamingIndicator}>
+                    <Animated.View style={{ opacity: pulseAnim }}>
+                      <Ionicons name="radio" size={14} color={colors.primary} />
+                    </Animated.View>
+                  </View>
+                  <Text style={styles.typingText}>
+                    Streaming... {streamingInfo.tokenCount} tokens
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Animated.View style={[styles.typingDots, { opacity: pulseAnim }]}>
+                    <View style={styles.typingDot} />
+                    <View style={[styles.typingDot, styles.typingDotMiddle]} />
+                    <View style={styles.typingDot} />
+                  </Animated.View>
+                  <Text style={styles.typingText}>
+                    {streamingInfo.usedFallback ? 'Processing...' : 'AI is thinking...'}
+                  </Text>
+                </>
+              )}
+              <TouchableOpacity
+                onPress={abort}
+                style={styles.abortButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="stop-circle" size={18} color={colors.error} />
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -435,5 +463,13 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
     fontStyle: 'italic',
+    flex: 1,
+  },
+  streamingIndicator: {
+    marginRight: spacing.xs,
+  },
+  abortButton: {
+    marginLeft: spacing.sm,
+    padding: spacing.xs,
   },
 });

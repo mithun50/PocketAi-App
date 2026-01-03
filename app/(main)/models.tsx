@@ -29,13 +29,24 @@ export default function ModelsScreen() {
     loading,
     error,
     downloadState,
+    activating,
     refresh,
     installModel,
     removeModel,
     activateModel,
   } = useModels();
 
-  const { connected, activeModel } = useBackendStatus();
+  const { connected, activeModel, forceRefresh } = useBackendStatus();
+
+  // Activate model and immediately refresh status
+  const handleActivateModel = async (modelName: string) => {
+    const result = await activateModel(modelName);
+    if (result.success) {
+      // Force refresh to show new active model immediately (bypasses 30s cache)
+      await forceRefresh();
+    }
+    return result;
+  };
 
   const getModelDetails = (modelName: string) => {
     const cleanName = modelName.replace('.gguf', '').split('-')[0].toLowerCase();
@@ -148,6 +159,7 @@ export default function ModelsScreen() {
             {installedModels.map((model) => {
               const details = getModelDetails(model.name);
               const isActive = activeModel === model.name;
+              const isActivating = activating === model.name;
               return (
                 <ModelCard
                   key={model.name}
@@ -157,7 +169,8 @@ export default function ModelsScreen() {
                   ram={details?.ram}
                   installed={true}
                   active={isActive}
-                  onActivate={() => activateModel(model.name)}
+                  activating={isActivating}
+                  onActivate={() => handleActivateModel(model.name)}
                   onDelete={() => removeModel(model.name)}
                 />
               );

@@ -1,3 +1,4 @@
+export { BatteryWarning } from './BatteryWarning';
 export { ChatBubble } from './ChatBubble';
 export { ChatInput } from './ChatInput';
 export { CommandBlock } from './CommandBlock';

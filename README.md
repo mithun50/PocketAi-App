@@ -8,7 +8,9 @@ A mobile UI for PocketAI - run AI models locally on your Android device.
 
 - **Setup Wizard**: Guides you through installing Termux and PocketAI
 - **Chat Interface**: Conversation with AI, history saved locally
+- **Real-time Streaming**: See AI responses appear token-by-token (ChatGPT-style)
 - **Model Management**: Install, remove, and switch between AI models
+- **Smart Connection**: Automatic reconnection with exponential backoff
 - **Offline First**: Everything runs locally, no internet needed after setup
 
 ## Prerequisites
@@ -63,13 +65,51 @@ The app communicates with PocketAI's REST API:
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/health` | GET | Check connection |
-| `/api/status` | GET | Get version and active model |
+| `/api/health` | GET | Check connection (instant) |
+| `/api/status` | GET | Get version and active model (cached 30s) |
 | `/api/models` | GET | List available models |
 | `/api/models/installed` | GET | List installed models |
 | `/api/models/install` | POST | Install a model |
 | `/api/models/use` | POST | Activate a model |
-| `/api/chat` | POST | Send message to AI |
+| `/api/chat` | POST | Send message (blocking) |
+| `/api/chat/stream` | POST | Send message (SSE streaming) |
+
+## Streaming Chat
+
+The app uses Server-Sent Events (SSE) for real-time streaming:
+
+```
+App sends message → Backend generates tokens → Tokens stream to app → UI updates live
+```
+
+**Features:**
+- Tokens appear as they're generated (ChatGPT-like experience)
+- Animated cursor shows active generation
+- "Live" badge with pulsing indicator during streaming
+- Automatic fallback to blocking mode if streaming fails
+
+**Fallback Behavior:**
+If streaming fails (network issues, timeout), the app automatically:
+1. Falls back to `/api/chat` (blocking endpoint)
+2. Shows "non-streaming" badge on the response
+3. Displays full response at once
+
+## Connection Management
+
+The app includes smart connection handling:
+
+**Polling Intervals:**
+| State | Interval | Notes |
+|-------|----------|-------|
+| Disconnected | 5 seconds | Tries to reconnect quickly |
+| Connected | 15 seconds | Reduces polling to save resources |
+| During chat | Paused | No polling while AI is generating |
+
+**Features:**
+- Automatic address discovery (localhost, 127.0.0.1, device IP)
+- Exponential backoff on failures (up to 30 seconds)
+- Instant resume after successful chat
+- Status caching to reduce API calls
 
 ## Project Structure
 

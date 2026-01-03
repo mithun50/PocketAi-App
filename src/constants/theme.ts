@@ -6,6 +6,7 @@ export const colors = {
   surface: '#18181b',
   surfaceElevated: '#27272a',
   surfaceHighlight: '#3f3f46',
+  surfaceLight: '#3f3f46', // Alias for surfaceHighlight for compatibility
 
   // Primary (Emerald/Green)
   primary: '#10b981',
@@ -17,6 +18,10 @@ export const colors = {
   accent: '#06b6d4',
   accentLight: '#22d3ee',
   accentMuted: 'rgba(6, 182, 212, 0.15)',
+
+  // Secondary (for secondary actions)
+  secondary: '#52525b',
+  secondaryLight: '#71717a',
 
   // Text - better contrast
   text: '#fafafa',

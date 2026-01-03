@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from '../services/api';
 import { connectionManager } from '../services/connection';
 import { Model, InstalledModel, DownloadState } from '../types';
@@ -8,11 +8,15 @@ export function useModels() {
   const [installedModels, setInstalledModels] = useState<InstalledModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [activating, setActivating] = useState<string | null>(null); // Track which model is activating
   const [downloadState, setDownloadState] = useState<DownloadState>({
     modelName: null,
     status: 'idle',
     progress: 0,
   });
+
+  // Debounce ref to prevent rapid calls
+  const activateInProgress = useRef(false);
 
   const fetchModels = useCallback(async () => {
     setLoading(true);
@@ -125,7 +129,16 @@ export function useModels() {
   }, [fetchModels]);
 
   const activateModel = useCallback(async (modelName: string) => {
+    // Prevent duplicate calls
+    if (activateInProgress.current) {
+      console.log('[useModels] Activation already in progress, ignoring');
+      return { success: false, error: 'Activation in progress' };
+    }
+
+    activateInProgress.current = true;
+    setActivating(modelName);
     connectionManager.pause();
+
     try {
       const result = await api.activateModel(modelName);
       if (result.success) {
@@ -133,6 +146,8 @@ export function useModels() {
       }
       return result;
     } finally {
+      activateInProgress.current = false;
+      setActivating(null);
       connectionManager.resume();
     }
   }, [fetchModels]);
@@ -143,6 +158,7 @@ export function useModels() {
     loading,
     error,
     downloadState,
+    activating, // Which model is currently being activated
     refresh: fetchModels,
     installModel,
     removeModel,

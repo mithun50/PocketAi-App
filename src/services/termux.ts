@@ -1,18 +1,23 @@
 import * as Linking from 'expo-linking';
 import * as Clipboard from 'expo-clipboard';
 import * as IntentLauncher from 'expo-intent-launcher';
-import { Platform, Alert, NativeModules } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import Constants from 'expo-constants';
 
 const TERMUX_PACKAGE = 'com.termux';
-const TERMUX_BIN_PATH = '/data/data/com.termux/files/usr/bin';
-const TERMUX_HOME = '/data/data/com.termux/files/home';
-
-// Native module for Termux service intents (only available in built APK, not Expo Go)
-const TermuxIntent = NativeModules.TermuxIntent;
 
 // Check if running in Expo Go (native modules won't work there)
 const isExpoGo = Constants.appOwnership === 'expo';
+
+// Dynamic import for native module (only available in built APK)
+let TermuxIntent: any = null;
+if (!isExpoGo) {
+  try {
+    TermuxIntent = require('termux-intent').default;
+  } catch (e) {
+    // Module not available in Expo Go
+  }
+}
 
 export interface TermuxResult {
   success: boolean;
@@ -96,12 +101,7 @@ export async function runInTermux(command: string): Promise<TermuxResult> {
   // Requires Termux "Allow External Apps" setting enabled
   if (!isExpoGo && TermuxIntent) {
     try {
-      await TermuxIntent.runCommand(
-        `${TERMUX_BIN_PATH}/bash`,
-        ['-c', command],
-        TERMUX_HOME,
-        false // not background - show in terminal
-      );
+      await TermuxIntent.runCommand(command);
       // Open Termux to see output
       await openTermux();
       return { success: true };

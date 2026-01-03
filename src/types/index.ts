@@ -35,6 +35,33 @@ export interface ChatResponse {
   response: string;
 }
 
+// Streaming Chat Types
+
+export interface StreamToken {
+  token: string;
+}
+
+export interface StreamDone {
+  done: true;
+  full_response: string;
+}
+
+export type StreamEvent = StreamToken | StreamDone;
+
+export interface StreamingState {
+  isStreaming: boolean;
+  tokens: string[];
+  currentText: string;
+  streamFailed: boolean;
+  usedFallback: boolean;
+}
+
+export interface StreamCallbacks {
+  onToken: (token: string, fullText: string) => void;
+  onComplete: (fullResponse: string) => void;
+  onError: (error: string, willFallback: boolean) => void;
+}
+
 export interface ConfigResponse {
   active_model?: string;
   threads?: string;
@@ -46,6 +73,7 @@ export interface ApiResult<T> {
   success: boolean;
   data?: T;
   error?: string;
+  errorCode?: string; // For detailed error handling
 }
 
 // Chat Types
@@ -70,6 +98,8 @@ export interface ConnectionStatus {
   activeModel?: string;
   lastCheck: number;
   error?: string;
+  errorCode?: string; // For detailed troubleshooting
+  apiAddress?: string; // The working API address (localhost, 127.0.0.1, device IP, etc.)
 }
 
 // Model Download Types
