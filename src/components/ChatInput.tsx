@@ -56,7 +56,7 @@ export function ChatInput({
   // Pulse animation while listening
   useEffect(() => {
     if (isListening) {
-      Animated.loop(
+      const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(micPulse, {
             toValue: 1.2,
@@ -69,9 +69,12 @@ export function ChatInput({
             useNativeDriver: true,
           }),
         ])
-      ).start();
-    } else {
-      micPulse.setValue(1);
+      );
+      animation.start();
+      return () => {
+        animation.stop();
+        micPulse.setValue(1);
+      };
     }
   }, [isListening]);
 

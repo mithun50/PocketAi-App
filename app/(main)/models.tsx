@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,10 +31,12 @@ export default function ModelsScreen() {
     error,
     downloadState,
     activating,
+    verifyState,
     refresh,
     installModel,
     removeModel,
     activateModel,
+    verifyModels,
   } = useModels();
 
   const { connected, activeModel, forceRefresh } = useBackendStatus();
@@ -159,6 +162,36 @@ export default function ModelsScreen() {
               <View style={styles.sectionBadge}>
                 <Text style={styles.sectionBadgeText}>{installedModels.length}</Text>
               </View>
+              <View style={styles.sectionHeaderSpacer} />
+              <TouchableOpacity
+                style={[
+                  styles.verifyButton,
+                  verifyState.status === 'verifying' && styles.verifyButtonDisabled,
+                  verifyState.status === 'success' && styles.verifyButtonSuccess,
+                  verifyState.status === 'error' && styles.verifyButtonError,
+                ]}
+                onPress={verifyModels}
+                disabled={verifyState.status === 'verifying'}
+              >
+                {verifyState.status === 'verifying' ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : verifyState.status === 'success' ? (
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                ) : verifyState.status === 'error' ? (
+                  <Ionicons name="alert-circle" size={16} color={colors.error} />
+                ) : (
+                  <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+                )}
+                <Text style={[
+                  styles.verifyButtonText,
+                  verifyState.status === 'success' && styles.verifyButtonTextSuccess,
+                  verifyState.status === 'error' && styles.verifyButtonTextError,
+                ]}>
+                  {verifyState.status === 'verifying' ? 'Verifying...' :
+                   verifyState.status === 'success' ? 'Verified' :
+                   verifyState.status === 'error' ? 'Corrupted' : 'Verify'}
+                </Text>
+              </TouchableOpacity>
             </View>
             {installedModels.map((model) => {
               const details = getModelDetails(model.name);
@@ -385,6 +418,38 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+  },
+  sectionHeaderSpacer: {
+    flex: 1,
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    gap: spacing.xs,
+  },
+  verifyButtonDisabled: {
+    opacity: 0.7,
+  },
+  verifyButtonSuccess: {
+    backgroundColor: colors.successMuted,
+  },
+  verifyButtonError: {
+    backgroundColor: colors.errorMuted,
+  },
+  verifyButtonText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  verifyButtonTextSuccess: {
+    color: colors.success,
+  },
+  verifyButtonTextError: {
+    color: colors.error,
   },
   sectionDescription: {
     color: colors.textMuted,

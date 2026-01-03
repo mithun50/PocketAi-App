@@ -3,12 +3,18 @@ import * as api from '../services/api';
 import { connectionManager } from '../services/connection';
 import { Model, InstalledModel, DownloadState } from '../types';
 
+export type VerifyState = {
+  status: 'idle' | 'verifying' | 'success' | 'error';
+  message?: string;
+};
+
 export function useModels() {
   const [availableModels, setAvailableModels] = useState<Model[]>([]);
   const [installedModels, setInstalledModels] = useState<InstalledModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [activating, setActivating] = useState<string | null>(null); // Track which model is activating
+  const [verifyState, setVerifyState] = useState<VerifyState>({ status: 'idle' });
   const [downloadState, setDownloadState] = useState<DownloadState>({
     modelName: null,
     status: 'idle',
@@ -152,6 +158,35 @@ export function useModels() {
     }
   }, [fetchModels]);
 
+  const verifyModels = useCallback(async () => {
+    setVerifyState({ status: 'verifying' });
+    connectionManager.pause();
+
+    try {
+      const result = await api.verifyModels();
+      if (result.success && result.data) {
+        setVerifyState({
+          status: result.data.success ? 'success' : 'error',
+          message: result.data.message,
+        });
+      } else {
+        setVerifyState({
+          status: 'error',
+          message: result.error || 'Verification failed',
+        });
+      }
+
+      // Reset after delay
+      setTimeout(() => {
+        setVerifyState({ status: 'idle' });
+      }, 3000);
+
+      return result;
+    } finally {
+      connectionManager.resume();
+    }
+  }, []);
+
   return {
     availableModels,
     installedModels,
@@ -159,9 +194,11 @@ export function useModels() {
     error,
     downloadState,
     activating, // Which model is currently being activated
+    verifyState,
     refresh: fetchModels,
     installModel,
     removeModel,
     activateModel,
+    verifyModels,
   };
 }

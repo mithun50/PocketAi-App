@@ -34,7 +34,14 @@
       "expo-router",
       "./plugins/withTermuxPermission",
       "./plugins/withTermuxIntent",
-      "./plugins/withNetworkConfig"
+      "./plugins/withNetworkConfig",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow PocketAI to use the microphone for voice input",
+          "speechRecognitionPermission": "Allow PocketAI to use speech recognition for voice input"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

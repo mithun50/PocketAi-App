@@ -46,7 +46,7 @@ export default function ChatScreen() {
   // Pulse animation for typing indicator
   useEffect(() => {
     if (isLoading) {
-      Animated.loop(
+      const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
             toValue: 0.4,
@@ -59,9 +59,12 @@ export default function ChatScreen() {
             useNativeDriver: true,
           }),
         ])
-      ).start();
-    } else {
-      pulseAnim.setValue(1);
+      );
+      animation.start();
+      return () => {
+        animation.stop();
+        pulseAnim.setValue(1);
+      };
     }
   }, [isLoading]);
 

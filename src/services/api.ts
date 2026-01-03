@@ -7,6 +7,7 @@ import {
   ConfigResponse,
   ApiResult,
   StreamCallbacks,
+  VerifyResponse,
 } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Network from 'expo-network';
@@ -378,6 +379,16 @@ export async function activateModel(
       method: 'POST',
       body: JSON.stringify({ model: modelName }),
     }
+  );
+}
+
+// Verify models integrity
+export async function verifyModels(): Promise<ApiResult<VerifyResponse>> {
+  const base = getApiBase();
+  return fetchWithTimeout<VerifyResponse>(
+    `${base}/api/models/verify`,
+    {},
+    120000 // 2 minutes timeout for verification
   );
 }
 

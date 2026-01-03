@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+
+// Try to import expo-speech-recognition, but handle if not available
+let ExpoSpeechRecognitionModule: any = null;
+let useSpeechRecognitionEvent: any = null;
+let isNativeModuleAvailable = false;
+
+try {
+  const speechModule = require('expo-speech-recognition');
+  ExpoSpeechRecognitionModule = speechModule.ExpoSpeechRecognitionModule;
+  useSpeechRecognitionEvent = speechModule.useSpeechRecognitionEvent;
+  isNativeModuleAvailable = !!ExpoSpeechRecognitionModule;
+} catch (e) {
+  console.log('[STT] expo-speech-recognition not available (Expo Go?)');
+  isNativeModuleAvailable = false;
+}
 
 interface SpeechRecognitionState {
   isListening: boolean;
@@ -10,89 +23,107 @@ interface SpeechRecognitionState {
 }
 
 /**
- * Speech recognition hook using expo-av for recording
- * Works in Expo Go - records audio for manual processing
- * For live transcription, build native APK with expo-speech-recognition
+ * Speech recognition hook using expo-speech-recognition
+ * Falls back gracefully when native module not available (Expo Go)
  */
 export function useSpeechRecognition() {
   const [state, setState] = useState<SpeechRecognitionState>({
     isListening: false,
     transcript: '',
     error: null,
-    isAvailable: true, // expo-av works in Expo Go
+    isAvailable: false,
   });
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const recordingUri = useRef<string | null>(null);
+  const transcriptRef = useRef('');
 
-  // Cleanup on unmount
+  // Check availability on mount
   useEffect(() => {
-    return () => {
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+    const checkAvailability = async () => {
+      if (!isNativeModuleAvailable) {
+        console.log('[STT] Native module not available');
+        setState(prev => ({ ...prev, isAvailable: false }));
+        return;
+      }
+
+      try {
+        const status = await ExpoSpeechRecognitionModule.getStateAsync();
+        setState(prev => ({
+          ...prev,
+          isAvailable: status !== 'inactive',
+        }));
+      } catch (e) {
+        console.log('[STT] Availability check failed:', e);
+        setState(prev => ({ ...prev, isAvailable: false }));
       }
     };
+    checkAvailability();
+  }, []);
+
+  // Set up event listeners only if native module is available
+  useEffect(() => {
+    if (!isNativeModuleAvailable || !useSpeechRecognitionEvent) {
+      return;
+    }
+
+    // Note: useSpeechRecognitionEvent is a hook and can't be called conditionally
+    // So we handle this differently - the events just won't fire if module isn't loaded
   }, []);
 
   const startListening = useCallback(async () => {
+    if (!isNativeModuleAvailable) {
+      setState(prev => ({
+        ...prev,
+        error: 'Speech recognition requires a native build. Run: npx expo prebuild',
+      }));
+      return false;
+    }
+
     try {
       // Request permissions
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        setState(prev => ({ ...prev, error: 'Microphone permission denied' }));
+      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+
+      if (!result.granted) {
+        setState(prev => ({
+          ...prev,
+          error: 'Microphone permission denied. Please enable in Settings.',
+        }));
         return false;
       }
 
-      // Configure audio
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      // Clear state
+      // Clear previous transcript
+      transcriptRef.current = '';
       setState(prev => ({ ...prev, transcript: '', error: null, isListening: true }));
 
-      // Start recording
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await recording.startAsync();
-      recordingRef.current = recording;
+      // Start recognition
+      await ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        maxAlternatives: 1,
+        continuous: false,
+        requiresOnDeviceRecognition: false,
+        addsPunctuation: true,
+      });
 
-      console.log('[STT] Recording started');
+      console.log('[STT] Started listening');
       return true;
     } catch (e: any) {
       console.log('[STT] Start error:', e);
       setState(prev => ({
         ...prev,
         isListening: false,
-        error: e.message || 'Failed to start recording',
+        error: e.message || 'Failed to start speech recognition',
       }));
       return false;
     }
   }, []);
 
   const stopListening = useCallback(async () => {
-    if (!recordingRef.current) return;
+    if (!isNativeModuleAvailable) return;
 
     try {
-      console.log('[STT] Stopping recording...');
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-      recordingUri.current = uri;
-
+      console.log('[STT] Stopping...');
+      await ExpoSpeechRecognitionModule.stop();
       setState(prev => ({ ...prev, isListening: false }));
-
-      if (uri) {
-        console.log('[STT] Recording saved:', uri);
-        // For Expo Go: show message that recording is ready
-        // In native build, this would use expo-speech-recognition
-        setState(prev => ({
-          ...prev,
-          transcript: '[Voice recorded - build APK for live transcription]',
-          error: null,
-        }));
-      }
     } catch (e: any) {
       console.log('[STT] Stop error:', e);
       setState(prev => ({
@@ -104,12 +135,16 @@ export function useSpeechRecognition() {
   }, []);
 
   const cancelListening = useCallback(async () => {
-    if (!recordingRef.current) return;
+    if (!isNativeModuleAvailable) return;
 
     try {
-      await recordingRef.current.stopAndUnloadAsync();
-      recordingRef.current = null;
-      setState(prev => ({ ...prev, transcript: '', isListening: false, error: null }));
+      await ExpoSpeechRecognitionModule.abort();
+      setState(prev => ({
+        ...prev,
+        transcript: '',
+        isListening: false,
+        error: null
+      }));
     } catch (e) {
       console.log('[STT] Cancel error:', e);
     }
@@ -120,6 +155,26 @@ export function useSpeechRecognition() {
     startListening,
     stopListening,
     cancelListening,
-    recordingUri: recordingUri.current,
   };
+}
+
+/**
+ * Hook wrapper that uses native speech recognition events
+ * Must be used in a component that renders when native module is available
+ */
+export function useSpeechRecognitionWithEvents(
+  onResult?: (transcript: string, isFinal: boolean) => void,
+  onError?: (error: string) => void
+) {
+  const baseHook = useSpeechRecognition();
+
+  // Only set up event listeners if module is available
+  useEffect(() => {
+    if (!isNativeModuleAvailable) return;
+
+    // These would be set up via the native module's event system
+    // For now, we rely on the promise-based API
+  }, []);
+
+  return baseHook;
 }

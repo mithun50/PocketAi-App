@@ -1,4 +1,11 @@
 import { Platform } from 'react-native';
+import {
+  moderateScale,
+  fontScale,
+  spacingScale,
+  responsive,
+  isTablet,
+} from '../utils/responsive';
 
 export const colors = {
   // Backgrounds - deeper, richer darks
@@ -36,6 +43,7 @@ export const colors = {
 
   // Status
   success: '#10b981',
+  successMuted: 'rgba(16, 185, 129, 0.15)',
   error: '#ef4444',
   errorMuted: 'rgba(239, 68, 68, 0.15)',
   warning: '#f59e0b',
@@ -57,7 +65,21 @@ export const colors = {
   overlayLight: 'rgba(0, 0, 0, 0.3)',
 };
 
+// Responsive spacing - scales with screen size
 export const spacing = {
+  xxs: spacingScale(2),
+  xs: spacingScale(4),
+  sm: spacingScale(8),
+  md: spacingScale(12),
+  lg: spacingScale(16),
+  xl: spacingScale(20),
+  xxl: spacingScale(24),
+  xxxl: spacingScale(32),
+  huge: spacingScale(48),
+};
+
+// Raw spacing values (for cases where you need unscaled values)
+export const rawSpacing = {
   xxs: 2,
   xs: 4,
   sm: 8,
@@ -70,17 +92,32 @@ export const spacing = {
 };
 
 export const borderRadius = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
+  xs: moderateScale(4, 0.2),
+  sm: moderateScale(8, 0.2),
+  md: moderateScale(12, 0.2),
+  lg: moderateScale(16, 0.2),
+  xl: moderateScale(20, 0.2),
+  xxl: moderateScale(24, 0.2),
   pill: 100,
   full: 9999,
 };
 
+// Responsive font sizes
 export const fontSize = {
+  xxs: fontScale(10),
+  xs: fontScale(11),
+  sm: fontScale(13),
+  md: fontScale(15),
+  lg: fontScale(17),
+  xl: fontScale(20),
+  xxl: fontScale(24),
+  xxxl: fontScale(28),
+  title: fontScale(32),
+  hero: fontScale(40),
+};
+
+// Raw font sizes (for cases where you need unscaled values)
+export const rawFontSize = {
   xxs: 10,
   xs: 11,
   sm: 13,
@@ -106,6 +143,40 @@ export const lineHeight = {
   tight: 1.2,
   normal: 1.5,
   relaxed: 1.75,
+};
+
+// Responsive icon sizes
+export const iconSize = {
+  xs: moderateScale(14, 0.3),
+  sm: moderateScale(18, 0.3),
+  md: moderateScale(22, 0.3),
+  lg: moderateScale(28, 0.3),
+  xl: moderateScale(36, 0.3),
+  xxl: moderateScale(48, 0.3),
+};
+
+// Component sizes - responsive
+export const componentSize = {
+  buttonHeight: moderateScale(48, 0.3),
+  inputHeight: moderateScale(48, 0.3),
+  headerHeight: moderateScale(56, 0.3),
+  tabBarHeight: moderateScale(60, 0.3),
+  avatarSm: moderateScale(32, 0.3),
+  avatarMd: moderateScale(40, 0.3),
+  avatarLg: moderateScale(56, 0.3),
+  touchTarget: moderateScale(44, 0.3), // Minimum touch target size
+};
+
+// Tablet-specific adjustments
+export const layout = {
+  maxContentWidth: isTablet ? 600 : undefined,
+  chatBubbleMaxWidth: isTablet ? '60%' : '80%',
+  sidebarWidth: isTablet ? 300 : undefined,
+  gridColumns: responsive({
+    small: 1,
+    default: 2,
+    tablet: 3,
+  }),
 };
 
 // Shadows for depth
@@ -199,12 +270,16 @@ export const componentStyles = {
     paddingVertical: spacing.md,
     color: colors.text,
     fontSize: fontSize.md,
+    minHeight: componentSize.inputHeight,
   },
   button: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
+    minHeight: componentSize.buttonHeight,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     ...shadows.md,
   },
   buttonText: {
@@ -212,4 +287,10 @@ export const componentStyles = {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
   },
+  // Center content on tablets
+  contentContainer: isTablet ? {
+    maxWidth: 600,
+    alignSelf: 'center' as const,
+    width: '100%' as const,
+  } : {},
 };

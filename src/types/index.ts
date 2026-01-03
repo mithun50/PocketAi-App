@@ -31,6 +31,11 @@ export interface InstalledModelsResponse {
   models: InstalledModel[];
 }
 
+export interface VerifyResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface ChatResponse {
   response: string;
 }
