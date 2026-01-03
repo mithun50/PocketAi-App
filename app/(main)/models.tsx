@@ -49,10 +49,14 @@ export default function ModelsScreen() {
   };
 
   const getModelDetails = (modelName: string) => {
-    const cleanName = modelName.replace('.gguf', '').split('-')[0].toLowerCase();
-    return availableModels.find(
-      (m) => m.name.toLowerCase() === cleanName || modelName.toLowerCase().includes(m.name.toLowerCase())
+    const lowerName = modelName.toLowerCase();
+    // Find all matching models, prefer longest match (most specific)
+    const matches = availableModels.filter(
+      (m) => lowerName.includes(m.name.toLowerCase())
     );
+    // Sort by name length descending - longer names are more specific
+    matches.sort((a, b) => b.name.length - a.name.length);
+    return matches[0] || null;
   };
 
   if (!connected) {
