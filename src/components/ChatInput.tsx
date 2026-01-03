@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   Keyboard,
   Animated,
+  Text,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
   spacing,
@@ -15,6 +17,7 @@ import {
   fontSize,
   shadows,
 } from '../constants/theme';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -32,6 +35,45 @@ export function ChatInput({
   const [text, setText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const micPulse = useRef(new Animated.Value(1)).current;
+
+  const {
+    isListening,
+    transcript,
+    error,
+    isAvailable,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition();
+
+  // Update text when transcript changes
+  useEffect(() => {
+    if (transcript) {
+      setText(transcript);
+    }
+  }, [transcript]);
+
+  // Pulse animation while listening
+  useEffect(() => {
+    if (isListening) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(micPulse, {
+            toValue: 1.2,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(micPulse, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      micPulse.setValue(1);
+    }
+  }, [isListening]);
 
   const handleSend = () => {
     if (text.trim() && !isLoading && !disabled) {
@@ -55,7 +97,16 @@ export function ChatInput({
     }
   };
 
+  const handleMicPress = async () => {
+    if (isListening) {
+      await stopListening();
+    } else {
+      await startListening();
+    }
+  };
+
   const canSend = text.trim().length > 0 && !isLoading && !disabled;
+  const showMic = !text.trim() && isAvailable && !isLoading;
 
   return (
     <View style={styles.wrapper}>
@@ -64,17 +115,18 @@ export function ChatInput({
           styles.container,
           isFocused && styles.containerFocused,
           disabled && styles.containerDisabled,
+          isListening && styles.containerListening,
         ]}
       >
         <TextInput
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
+          placeholder={isListening ? 'Listening...' : placeholder}
+          placeholderTextColor={isListening ? colors.primary : colors.textMuted}
           multiline
           maxLength={4000}
-          editable={!isLoading && !disabled}
+          editable={!isLoading && !disabled && !isListening}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onSubmitEditing={handleSend}
@@ -82,6 +134,27 @@ export function ChatInput({
           returnKeyType="send"
         />
 
+        {/* Mic button - shown when no text */}
+        {showMic && (
+          <Animated.View style={{ transform: [{ scale: micPulse }] }}>
+            <TouchableOpacity
+              style={[
+                styles.micButton,
+                isListening && styles.micButtonActive,
+              ]}
+              onPress={handleMicPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isListening ? 'mic' : 'mic-outline'}
+                size={22}
+                color={isListening ? colors.textInverse : colors.primary}
+              />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {/* Send button */}
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
           <TouchableOpacity
             style={[
@@ -100,6 +173,11 @@ export function ChatInput({
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {/* Error message */}
+      {error && (
+        <Text style={styles.errorText}>{error}</Text>
+      )}
     </View>
   );
 }
@@ -143,6 +221,10 @@ const styles = StyleSheet.create({
   containerDisabled: {
     opacity: 0.5,
   },
+  containerListening: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
+  },
   input: {
     flex: 1,
     color: colors.text,
@@ -152,6 +234,21 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     textAlignVertical: 'center',
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: borderRadius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary + '50',
+  },
+  micButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    ...shadows.glow,
   },
   sendButton: {
     width: 40,
@@ -184,5 +281,11 @@ const styles = StyleSheet.create({
   },
   sendArrowActive: {
     borderBottomColor: colors.textInverse,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+    marginLeft: spacing.md,
   },
 });
