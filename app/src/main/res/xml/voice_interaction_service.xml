@@ -1,0 +1,5 @@
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:recognitionService="com.nxg.pocketai.services.assistant.PocketAiService"
+    android:sessionService="com.nxg.pocketai.services.assistant.PocketAiVoiceInteractionSessionService"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true" />

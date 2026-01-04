@@ -1,0 +1,2 @@
+-keep class com.nxg.plugins.api.** { *; }
+-keep class com.nxg.plugins.model.** { *; }
